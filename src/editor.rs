@@ -1,16 +1,17 @@
 use core::cmp::min;
 use crossterm::event::{
-    read, 
-    Event::{self, Key}, 
-    KeyCode, KeyEvent, KeyModifiers, KeyEventKind};
-use std::io::Error;
+    read,
+    Event::{self, Key},
+    KeyCode, KeyEvent, KeyEventKind, KeyModifiers,
+};
+use std::{env, io::Error};
 mod terminal;
-use terminal::{Terminal, Size, Position};
 mod view;
+use terminal::{Position, Size, Terminal};
 use view::View;
 
 #[derive(Copy, Clone, Default)]
-struct Location{
+struct Location {
     x: usize,
     y: usize,
 }
@@ -19,16 +20,23 @@ struct Location{
 pub struct Editor {
     should_quit: bool,
     location: Location,
+    view: View,
 }
 
-impl Editor{
+impl Editor {
     pub fn run(&mut self) {
         Terminal::initialize().unwrap();
+        self.handle_args();
         let result = self.repl();
         Terminal::terminate().unwrap();
         result.unwrap();
     }
-
+    fn handle_args(&mut self) {
+        let args: Vec<String> = env::args().collect();
+        if let Some(file_name) = args.get(1) {
+            self.view.load(file_name);
+        }
+    }
 
     fn repl(&mut self) -> Result<(), Error> {
         loop {
@@ -41,12 +49,9 @@ impl Editor{
         }
         Ok(())
     }
-    
-
-    
     fn move_point(&mut self, key_code: KeyCode) -> Result<(), Error> {
-        let Location {mut x, mut y} = self.location;
-        let Size {height, width} = Terminal::size()?;
+        let Location { mut x, mut y } = self.location;
+        let Size { height, width } = Terminal::size()?;
         match key_code {
             KeyCode::Up => {
                 y = y.saturating_sub(1);
@@ -77,14 +82,14 @@ impl Editor{
         self.location = Location { x, y };
         Ok(())
     }
-
     fn evaluate_event(&mut self, event: &Event) -> Result<(), Error> {
-        if let Key(KeyEvent{
+        if let Key(KeyEvent {
             code,
             modifiers,
             kind: KeyEventKind::Press,
             ..
-        }) = event {
+        }) = event
+        {
             match code {
                 KeyCode::Char('q') if *modifiers == KeyModifiers::CONTROL => {
                     self.should_quit = true;
@@ -99,26 +104,27 @@ impl Editor{
                 | KeyCode::Home => {
                     self.move_point(*code)?;
                 }
-                _ => {},
+                _ => (),
             }
         }
         Ok(())
     }
-
     fn refresh_screen(&self) -> Result<(), Error> {
         Terminal::hide_caret()?;
         Terminal::move_caret_to(Position::default())?;
-        if self.should_quit{
+        if self.should_quit {
             Terminal::clear_screen()?;
-            Terminal::print("Bye!\r")?;
+            Terminal::print("Goodbye.\r\n")?;
+        } else {
+            self.view.render()?;
+            Terminal::move_caret_to(Position {
+                col: self.location.x,
+                row: self.location.y,
+            })?;
         }
-        else{
-            View::render()?;
-            Terminal::move_caret_to(Position{ col:self.location.x, row:self.location.y })?;
-        }
+
         Terminal::show_caret()?;
         Terminal::execute()?;
         Ok(())
     }
-    
 }
