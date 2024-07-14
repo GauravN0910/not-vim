@@ -1,7 +1,8 @@
 use crossterm::cursor::{Hide, MoveTo, Show};
 use crossterm::queue;
 use crossterm::style::Print;
-use crossterm::terminal::{disable_raw_mode, enable_raw_mode, size, Clear, ClearType};
+use crossterm::terminal::{disable_raw_mode, enable_raw_mode, size, Clear, ClearType,
+                            EnterAlternateScreen, LeaveAlternateScreen};
 use std::io::{stdout, Error, Write};
 
 #[derive(Default, Copy, Clone)]
@@ -19,6 +20,8 @@ pub struct Terminal;
 
 impl Terminal {
     pub fn terminate() -> Result<(), Error> {
+        Self::leave_alternate_screen()?;
+        Self::show_caret()?;
         Self::execute()?;
         disable_raw_mode()?;
         Ok(())
@@ -26,6 +29,7 @@ impl Terminal {
 
     pub fn initialize() -> Result<(), Error> {
         enable_raw_mode()?;
+        Self::enter_alternate_screen()?;
         Self::clear_screen()?;
         Self::move_caret_to(Position { col: 0, row: 0 })?;
         Self::execute()?;
@@ -48,6 +52,16 @@ impl Terminal {
         Ok(())
     }
 
+    pub fn enter_alternate_screen() -> Result<(), Error> {
+        queue!(stdout(), EnterAlternateScreen)?;
+        Ok(())
+    }
+
+    pub fn leave_alternate_screen() -> Result<(), Error> {
+        queue!(stdout(), LeaveAlternateScreen)?;
+        Ok(())
+    }
+    
     pub fn hide_caret() -> Result<(), Error> {
         queue!(stdout(), Hide)?;
         Ok(())
@@ -55,6 +69,13 @@ impl Terminal {
 
     pub fn show_caret() -> Result<(), Error> {
         queue!(stdout(), Show)?;
+        Ok(())
+    }
+
+    pub fn print_row(row: usize, line_text:&str) -> Result<(), Error> {
+        Self::move_caret_to(Position{row, col:0})?;
+        Self::clear_line()?;
+        Self::print(line_text)?;
         Ok(())
     }
 
