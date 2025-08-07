@@ -52,10 +52,6 @@ impl Editor {
             }
         }
     }
-
-    // needless_pass_by_value: Event is not huge, so there is not a
-    // performance overhead in passing by value, and pattern matching in this
-    // function would be needlessly complicated if we pass by reference here.
     #[allow(clippy::needless_pass_by_value)]
     fn evaluate_event(&mut self, event: Event) {
         let should_process = match &event {

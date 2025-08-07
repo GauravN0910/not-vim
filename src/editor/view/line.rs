@@ -34,17 +34,17 @@ impl Line {
             .graphemes(true)
             .map(|grapheme| {
                 let (replacement, rendered_width) = Self::replacement_character(grapheme)
-                .map_or_else(
-                    || {
-                        let unicode_width = grapheme.width();
-                        let rendered_width = match unicode_width {
-                            0 | 1 => GraphemeWidth::Half,
-                            _ => GraphemeWidth::Full,
-                        };
-                        (None, rendered_width)
-                    },
-                    |replacement| (Some(replacement), GraphemeWidth::Half),
-                );
+                    .map_or_else(
+                        || {
+                            let unicode_width = grapheme.width();
+                            let rendered_width = match unicode_width {
+                                0 | 1 => GraphemeWidth::Half,
+                                _ => GraphemeWidth::Full,
+                            };
+                            (None, rendered_width)
+                        },
+                        |replacement| (Some(replacement), GraphemeWidth::Half),
+                    );
 
                 TextFragment {
                     grapheme: grapheme.to_string(),
@@ -52,7 +52,7 @@ impl Line {
                     replacement,
                 }
             })
-            .collect();
+        .collect();
         Self { fragments }
     }
 
@@ -88,7 +88,6 @@ impl Line {
             }
             if fragment_end > range.start {
                 if fragment_end > range.end || current_pos < range.start {
-                    // Clip on the right or left
                     result.push('⋯');
                 } else if let Some(char) = fragment.replacement {
                     result.push(char);
@@ -112,6 +111,6 @@ impl Line {
                 GraphemeWidth::Half => 1,
                 GraphemeWidth::Full => 2,
             })
-            .sum()
+        .sum()
     }
 }

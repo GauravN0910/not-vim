@@ -55,8 +55,6 @@ impl View {
         if height == 0 || width == 0 {
             return;
         }
-        // we allow this since we don't care if our welcome message is put _exactly_ in the middle.
-        // it's allowed to be a bit too far up or down
         #[allow(clippy::integer_division)]
         let vertical_center = height / 3;
         let top = self.scroll_offset.row;
@@ -87,8 +85,6 @@ impl View {
         if width <= len {
             return "~".to_string();
         }
-        // we allow this since we don't care if our welcome message is put _exactly_ in the middle.
-        // it's allowed to be a bit to the left or right.
         #[allow(clippy::integer_division)]
         let padding = (width.saturating_sub(len).saturating_sub(1)) / 2;
 
@@ -132,10 +128,6 @@ impl View {
         self.scroll_horizontally(col);
     }
 
-    // endregion
-
-    // region: Location and Position Handling
-
     pub fn caret_position(&self) -> Position {
         self.text_location_to_position()
             .saturating_sub(self.scroll_offset)
@@ -149,14 +141,8 @@ impl View {
         Position { col, row }
     }
 
-    // endregion
-
-    // region: text location movement
-
     fn move_text_location(&mut self, direction: &Direction) {
         let Size { height, .. } = self.size;
-        // This match moves the positon, but does not check for all boundaries.
-        // The final boundarline checking happens after the match statement.
         match direction {
             Direction::Up => self.move_up(1),
             Direction::Down => self.move_down(1),
@@ -178,8 +164,6 @@ impl View {
         self.snap_to_valid_grapheme();
         self.snap_to_valid_line();
     }
-    // clippy::arithmetic_side_effects: This function performs arithmetic calculations
-    // after explicitly checking that the target value will be within bounds.
     #[allow(clippy::arithmetic_side_effects)]
     fn move_right(&mut self) {
         let line_width = self
@@ -194,8 +178,6 @@ impl View {
             self.move_down(1);
         }
     }
-    // clippy::arithmetic_side_effects: This function performs arithmetic calculations
-    // after explicitly checking that the target value will be within bounds.
     #[allow(clippy::arithmetic_side_effects)]
     fn move_left(&mut self) {
         if self.text_location.grapheme_index > 0 {
@@ -216,8 +198,6 @@ impl View {
             .map_or(0, Line::grapheme_count);
     }
 
-    // Ensures self.location.grapheme_index points to a valid grapheme index by snapping it to the left most grapheme if appropriate.
-    // Doesn't trigger scrolling.
     fn snap_to_valid_grapheme(&mut self) {
         self.text_location.grapheme_index = self
             .buffer
@@ -227,13 +207,10 @@ impl View {
                 min(line.grapheme_count(), self.text_location.grapheme_index)
             });
     }
-    // Ensures self.location.line_index points to a valid line index by snapping it to the bottom most line if appropriate.
-    // Doesn't trigger scrolling.
     fn snap_to_valid_line(&mut self) {
         self.text_location.line_index = min(self.text_location.line_index, self.buffer.height());
     }
 
-    // endregion
 }
 
 impl Default for View {
