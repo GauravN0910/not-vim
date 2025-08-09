@@ -33,9 +33,15 @@ impl View {
             EditorCommand::Backspace => self.delete_backward(),
             EditorCommand::Delete => self.delete(),
             EditorCommand::Enter => self.insert_newline(),
+            EditorCommand::Save => self.save_file(),
             EditorCommand::Quit => {}
         }
     }
+    
+    pub fn save_file(&self) {
+        let _ = self.buffer.save_file();    
+    }
+
     pub fn load(&mut self, file_name: &str) {
         if let Ok(buffer) = Buffer::load(file_name) {
             self.buffer = buffer;
