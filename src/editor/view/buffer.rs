@@ -7,7 +7,8 @@ use super::Location;
 #[derive(Default)]
 pub struct Buffer {
     pub lines: Vec<Line>,
-    file_name: Option<String>,
+    pub file_name: Option<String>,
+    pub dirty: bool
 }
 
 impl Buffer {
@@ -19,16 +20,18 @@ impl Buffer {
         }
         Ok(Self { 
             lines,
-            file_name: Some(file_name.to_string())
+            file_name: Some(file_name.to_string()),
+            dirty: false
         })
     }
 
-    pub fn save_file(&self) -> Result<(), Error> {
+    pub fn save_file(&mut self) -> Result<(), Error> {
         if let Some(file_name) = &self.file_name {
             let mut file = File::create(file_name)?;
             for line in &self.lines {
                 writeln!(file, "{line}")?;
             }
+            self.dirty = false;
         } 
         Ok(())
     }
@@ -48,9 +51,11 @@ impl Buffer {
 
         if at.line_index == self.height() {
             self.lines.push(Line::from(&character.to_string()));
+            self.dirty = true;
         }
         else if let Some(line) = self.lines.get_mut(at.line_index) {
             line.insert_char(character, at.grapheme_index);
+            self.dirty = true;
         }
     }
 
@@ -61,10 +66,12 @@ impl Buffer {
                     let next_line = self.lines.remove(at.line_index.saturating_add(1));
                     #[allow(clippy::index_slicing)]
                     self.lines[at.line_index].append(&next_line);
+                    self.dirty = true;
             }
             else if at.grapheme_index < line.grapheme_count() {
                 #[allow(clippy::index_slicing)]
                 self.lines[at.line_index].delete(at.grapheme_index);
+                self.dirty = true;
             }
         }
     }
@@ -72,10 +79,12 @@ impl Buffer {
     pub fn insert_newline(&mut self, at: Location) {
         if at.line_index == self.height() {
             self.lines.push(Line::default());
+            self.dirty = true;
         }
         else if let Some(line) = self.lines.get_mut(at.line_index) {
             let new = line.split(at.grapheme_index);
             self.lines.insert(at.line_index.saturating_add(1), new);
+            self.dirty = true;
         }
     }
 }
